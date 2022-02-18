@@ -34,6 +34,30 @@ router.get("/track/:fileName", (req: Request, res: Response) => {
   res.sendFile(filePath);
 });
 
-
+router.put(
+  "/track",
+  [body("audioTag").notEmpty()],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).send(errors.array());
+      console.log(req.body);
+      const tag: AudioTag = req.body.audioTag;
+      const filePath = `./src/assets/tracks/${tag.fileName}`;
+      await ID3.update(req.body.audioTag, filePath, async (err, buffer) => {
+        if (err) throw err;
+        await ID3.read(filePath, function (err, tags) {
+          if (err) throw err;
+          const toReturnTag: AudioTag = tags;
+          toReturnTag.fileName = tag.fileName;
+          res.status(200).send(toReturnTag);
+        });
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(400);
+    }
+  }
+);
 
 export { router as trackRouter };
